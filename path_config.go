@@ -26,6 +26,14 @@ func (b *backend) pathConfig() *framework.Path {
 				Type:        framework.TypeString,
 				Description: "Secret key with appropriate permissions.",
 			},
+			"region": {
+				Type:        framework.TypeString,
+				Description: "Endpoint Region.",
+			},
+			"ttl": {
+				Type:        framework.TypeInt64,
+				Description: "Sts Token Expire TTL.",
+			},
 		},
 		Operations: map[logical.Operation]framework.OperationHandler{
 			// Your access key and secret are generated together at the same time,
@@ -71,9 +79,17 @@ func (b *backend) operationConfigUpdate(ctx context.Context, req *logical.Reques
 	} else {
 		return nil, errors.New("secret_key is required")
 	}
+	region := ""
+	if regionIfc, ok := data.GetOk("region"); ok {
+		region = regionIfc.(string)
+	} else {
+		// return nil, errors.New("secret_key is required")
+		region = "cn-hangzhou"
+	}
 	entry, err := logical.StorageEntryJSON("config", credConfig{
 		AccessKey: accessKey,
 		SecretKey: secretKey,
+		Region:    region,
 	})
 	if err != nil {
 		return nil, err
@@ -126,6 +142,7 @@ func readCredentials(ctx context.Context, storage logical.Storage) (*credConfig,
 type credConfig struct {
 	AccessKey string `json:"access_key"`
 	SecretKey string `json:"secret_key"`
+	Region    string `json:"region"`
 }
 
 const pathConfigRootHelpSyn = `
